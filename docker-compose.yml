@@ -1,7 +1,7 @@
 version: '3.3'
 services:
   kong-db:
-    image: 'postgres:9.5'
+    image: 'postgres:9.6'
     ports:
       - 5432:5432
     environment:
@@ -19,7 +19,7 @@ services:
 #    restart: unless-stopped
 
   kong-migration:
-    image: 'kong:0.12'
+    image: 'kong:0.14'
 #    depends_on:
 #      kong-database:
 #        condition: service_healthy
@@ -29,15 +29,15 @@ services:
       KONG_PG_DATABASE: kong
       KONG_PG_USER: kong
       KONG_PG_PASSWORD: kong
-    command: kong migrations up
+    command: kong migrations up  # use `kong migrations bootstrap` with kong:0.15
 
   kong:
-    image: 'kong:0.12'
+    image: 'kong:0.14'
     ports:
-      - 80:80
-      - 8443:8443
-      - 8001:8001
-      - 8444:8444
+      - 8000:8000  # proxy
+      - 8443:8443  # proxy ssl
+      - 8001:8001  # admin api
+      - 8444:8444  # admin api ssl
     environment:
       KONG_DATABASE: postgres
       KONG_PG_HOST: kong-db
@@ -50,7 +50,7 @@ services:
       KONG_ADMIN_ERROR_LOG: /dev/stderr
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
       KONG_ADMIN_LISTEN_SSL: 0.0.0.0:8444
-      KONG_PROXY_LISTEN: 0.0.0.0:80
+      KONG_PROXY_LISTEN: 0.0.0.0:8000
     links:
       - kong-db
     depends_on:
@@ -63,7 +63,7 @@ services:
 #    restart: unless-stopped
 
   kong-ui:
-    image: 'pgbi/kong-dashboard'
+    image: 'pgbi/kong-dashboard:v3.5.0'
     ports:
       - 8080:8080
     command: "start --kong-url http://kong:8001"
